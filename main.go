@@ -2,11 +2,10 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"math/big"
-	"serverless-example/configs"
-	"serverless-example/etherscan"
+	"report/configs"
+	"report/etherscan"
 	"sort"
 )
 
@@ -21,7 +20,12 @@ type Report struct {
 	Transactions      []NormalizedTransaction `json:"transactions"`
 }
 
-func Handler(ctx context.Context) {
+type Response struct {
+	StatusCode int    `json:"statusCode"`
+	Body       Report `json:"body"`
+}
+
+func Handler(ctx context.Context) (*Response, error) {
 	envConfig, err := configs.LoadEnvConfig()
 	if err != nil {
 		panic(err)
@@ -32,23 +36,27 @@ func Handler(ctx context.Context) {
 	latestBlockNumber, err := etherscanClient.GetLatestBlockNumber()
 	if err != nil {
 		fmt.Println("Error while getting the latest block number:", err)
-		return
+		return &Response{
+			StatusCode: 500,
+			Body:       Report{},
+		}, err
 	}
 
 	transactions, err := etherscanClient.GetTransactions(latestBlockNumber)
 	if err != nil {
 		fmt.Println("Error while getting transactions:", err)
-		return
+		return &Response{
+			StatusCode: 500,
+			Body:       Report{},
+		}, err
 	}
 
 	report := generateReport(transactions)
-	reportJSON, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
-		fmt.Println("Error while generating JSON report:", err)
-		return
-	}
 
-	fmt.Println(string(reportJSON))
+	return &Response{
+		StatusCode: 200,
+		Body:       report,
+	}, nil
 }
 
 func generateReport(transactions []etherscan.Transaction) Report {
