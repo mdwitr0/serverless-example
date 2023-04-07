@@ -1,0 +1,6 @@
+packages:
+  - name: example
+    environment:
+      ETHERSCAN_API_KEY: "${ETHERSCAN_API_KEY}"
+    functions:
+      - name: report
